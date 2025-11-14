@@ -40,6 +40,7 @@ ALLOWED_HOSTS.extend([
     'localhost',
     '127.0.0.1',
     '0.0.0.0',
+    'emailmicroservice-production-c5b2.up.railway.app',
 ])
 
 
