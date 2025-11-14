@@ -16,7 +16,7 @@ class HTTPClient:
         try:
             headers = {
                 'Content-Type': 'application/json',
-                'X-Service-Token': settings.SERVICE_TOKEN,
+                'X-Internal-Secret': settings.SERVICE_TOKEN,
                 'X-Service-Name': 'email_service'
             }
             
@@ -94,8 +94,8 @@ class HTTPClient:
         logger.info(f"Updating notification status: {notification_id} -> {status}")
         return HTTPClient._make_request(
             'POST',
-            f"{settings.API_GATEWAY_URL}/api/v1/service/notification-status",
-            # f"{settings.API_GATEWAY_URL}/api/v1/internal/email/status/"
+            # f"{settings.API_GATEWAY_URL}/api/v1/service/notification-status",
+            f"{settings.API_GATEWAY_URL}/api/v1/internal/email/status/"
             {
                 'notification_id': notification_id,
                 'status': status,

@@ -15,15 +15,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Collect static files (will run in docker-compose)
-# RUN python manage.py collectstatic --noinput
-
-# Create non-root user (optional but recommended)
+# Optional: create non-root user
 RUN useradd --create-home --shell /bin/bash app
 USER app
 
 # Expose port
-EXPOSE 8001
+EXPOSE 8000
 
-# Default command (overridden in docker-compose)
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8001"]
+# Run migrations, collect static files, then start server
+CMD ["sh", "-c", "python manage.py migrate && python manage.py collectstatic --noinput && python manage.py runserver 0.0.0.0:8000"]

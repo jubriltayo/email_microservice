@@ -98,21 +98,18 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('EMAIL_DB_NAME', 'email_service_db'),
-        'USER': os.getenv('EMAIL_DB_USER', 'postgres'),
-        'PASSWORD': os.getenv('EMAIL_DB_PASSWORD', 'postgres'),
-        'HOST': os.getenv('EMAIL_DB_HOST', 'localhost'),
-        'PORT': os.getenv('EMAIL_DB_PORT', '5432'),
+        'NAME': os.getenv('EMAIL_DB_NAME'),
+        'USER': os.getenv('EMAIL_DB_USER'),
+        'PASSWORD': os.getenv('EMAIL_DB_PASSWORD'),
+        'HOST': os.getenv('EMAIL_DB_HOST'),
+        'PORT': os.getenv('EMAIL_DB_PORT'),
+        'OPTIONS': {
+            'sslmode': 'require'
+        }
     }
 }
 
@@ -173,7 +170,7 @@ RABBITMQ_URL = 'amqps://pxkefxtc:013yLE9kxuZ-6K0sKdjhUXrPs_Ix7z1C@hawk.rmq.cloud
 API_GATEWAY_URL = os.getenv('API_GATEWAY_URL', 'http://localhost:8000')
 USER_SERVICE_URL = os.getenv('USER_SERVICE_URL', 'http://localhost:8000')
 TEMPLATE_SERVICE_URL = os.getenv('TEMPLATE_SERVICE_URL', 'http://localhost:8000')
-SERVICE_TOKEN = os.getenv('SERVICE_TOKEN', 'shared-secret-token-123')
+SERVICE_TOKEN = os.getenv('INTERNAL_API_SECRET', '')
 
 # Email Configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
