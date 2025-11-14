@@ -95,7 +95,7 @@ class HTTPClient:
         return HTTPClient._make_request(
             'POST',
             # f"{settings.API_GATEWAY_URL}/api/v1/service/notification-status",
-            f"{settings.API_GATEWAY_URL}/api/v1/internal/email/status/"
+            f"{settings.API_GATEWAY_URL}/api/v1/internal/email/status",
             {
                 'notification_id': notification_id,
                 'status': status,
