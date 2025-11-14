@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  # Email Service Web API
+  email-service:
+    build: .
+    ports:
+      - "8001:8001"
+    environment:
+      - DEBUG=False
+      # Database (PostgreSQL in Docker)
+      - EMAIL_DB_HOST=postgres
+      - EMAIL_DB_PORT=5432
+      - EMAIL_DB_NAME=email_service_db
+      - EMAIL_DB_USER=postgres
+      - EMAIL_DB_PASSWORD=postgres
+      # Cloud Services (Your existing cloud Redis & RabbitMQ)
+      - REDIS_URL=redis://default:LTLZrczgLNq4PQeVZI01H93XFzK4ascl@redis-10065.c246.us-east-1-4.ec2.cloud.redislabs.com:10065/0
+      - RABBITMQ_URL=amqps://pxkefxtc:013yLE9kxuZ-6K0sKdjhUXrPs_Ix7z1C@hawk.rmq.cloudamqp.com/pxkefxtc
+      # External Services (Your team's services)
+      - API_GATEWAY_URL=${API_GATEWAY_URL:-http://localhost:8000}
+      - USER_SERVICE_URL=${USER_SERVICE_URL:-http://localhost:8000}
+      - TEMPLATE_SERVICE_URL=${TEMPLATE_SERVICE_URL:-http://localhost:8000}
+      # Security
+      - EMAIL_SERVICE_SECRET_KEY=${EMAIL_SERVICE_SECRET_KEY}
+      - SERVICE_TOKEN=${SERVICE_TOKEN:-shared-secret-token-123}
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             python manage.py runserver 0.0.0.0:8001"
+
+  # Email Consumer Process
+  email-consumer:
+    build: .
+    environment:
+      - DEBUG=False
+      # Database (PostgreSQL in Docker)
+      - EMAIL_DB_HOST=postgres
+      - EMAIL_DB_PORT=5432
+      - EMAIL_DB_NAME=email_service_db
+      - EMAIL_DB_USER=postgres
+      - EMAIL_DB_PASSWORD=postgres
+      # Cloud Services (Your existing cloud Redis & RabbitMQ)
+      - REDIS_URL=redis://default:LTLZrczgLNq4PQeVZI01H93XFzK4ascl@redis-10065.c246.us-east-1-4.ec2.cloud.redislabs.com:10065/0
+      - RABBITMQ_URL=amqps://pxkefxtc:013yLE9kxuZ-6K0sKdjhUXrPs_Ix7z1C@hawk.rmq.cloudamqp.com/pxkefxtc
+      # External Services
+      - API_GATEWAY_URL=${API_GATEWAY_URL:-http://localhost:8000}
+      - USER_SERVICE_URL=${USER_SERVICE_URL:-http://localhost:8000}
+      - TEMPLATE_SERVICE_URL=${TEMPLATE_SERVICE_URL:-http://localhost:8000}
+      # Security
+      - EMAIL_SERVICE_SECRET_KEY=${EMAIL_SERVICE_SECRET_KEY}
+      - SERVICE_TOKEN=${SERVICE_TOKEN:-shared-secret-token-123}
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    command: python manage.py start_email_consumer
+
+  # PostgreSQL Database (Only thing running locally in Docker)
+  postgres:
+    image: postgres:14
+    environment:
+      - POSTGRES_DB=email_service_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
