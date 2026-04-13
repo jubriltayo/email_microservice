@@ -27,7 +27,10 @@ schema_view = get_schema_view(
     openapi.Info(
         title="Email Service Microservice",
         default_version='v1',
-        description="This API allows users share programming tips",
+        description="A distributed email notification service that processes asynchronous "
+            "messages via RabbitMQ, renders dynamic templates, enforces rate limiting, "
+            "applies circuit breaker patterns for resilience, and uses Redis caching "
+            "for performance optimization.",
         terms_of_service="https://www.yourapp.com/terms/",
         contact=openapi.Contact(email="jubriltayo@gmail.com"),
         license=openapi.License(name="MIT License"),

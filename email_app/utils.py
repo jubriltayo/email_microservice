@@ -16,7 +16,7 @@ class HTTPClient:
         try:
             headers = {
                 'Content-Type': 'application/json',
-                'X-Internal-Secret': settings.SERVICE_TOKEN,
+                'X-Service-Token': settings.SERVICE_TOKEN,
                 'X-Service-Name': 'email_service'
             }
             
@@ -66,7 +66,7 @@ class HTTPClient:
         logger.info(f"Fetching user data: {user_id}")
         user_data = HTTPClient._make_request(
             'GET', 
-            f"{settings.USER_SERVICE_URL}/api/v1/service/users/{user_id}"
+            f"{settings.USER_SERVICE_URL}/api/v1/service/users/{user_id}/"
         )
         
         if user_data:
@@ -94,8 +94,7 @@ class HTTPClient:
         logger.info(f"Updating notification status: {notification_id} -> {status}")
         return HTTPClient._make_request(
             'POST',
-            # f"{settings.API_GATEWAY_URL}/api/v1/service/notification-status",
-            f"{settings.API_GATEWAY_URL}/api/v1/internal/email/status",
+            f"{settings.API_GATEWAY_URL}/api/v1/service/notifications/status",
             {
                 'notification_id': notification_id,
                 'status': status,
@@ -203,13 +202,19 @@ class RateLimiter:
         current_hour = int(time.time() // 3600)
         rate_limit_key = f"rate_limit:{user_id}:{notification_type}:{current_hour}"
         
-        current_count = cache.get(rate_limit_key, 0)
-        
-        if current_count >= settings.EMAIL_RATE_LIMIT:
+        try:
+            current_count = cache.incr(rate_limit_key)
+        except ValueError:
+            cache.set(rate_limit_key, 1, settings.RATE_LIMIT_CACHE_TIMEOUT)
+            current_count = 1
+
+        if current_count == 1:
+            cache.expire(rate_limit_key, settings.RATE_LIMIT_CACHE_TIMEOUT)
+
+        if current_count > settings.EMAIL_RATE_LIMIT:
             logger.warning(f"Rate limit exceeded for user: {user_id}")
             return False
         
-        cache.set(rate_limit_key, current_count + 1, settings.RATE_LIMIT_CACHE_TIMEOUT)
         return True
     
     @staticmethod

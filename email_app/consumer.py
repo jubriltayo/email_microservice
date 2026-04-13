@@ -86,13 +86,13 @@ class EmailConsumer:
             # Check rate limit
             if not RateLimiter.check_rate_limit(user_id, 'email'):
                 error_msg = "Rate limit exceeded for user"
-                self._handle_failure(None, error_msg, request_id, delivery_tag, ch, message)
+                self._handle_failure(None, error_msg, request_id, delivery_tag, ch, message, record_cb_failure=False)
                 return
             
             # Check circuit breaker
             if not self.circuit_breaker.can_execute():
                 error_msg = "Circuit breaker is OPEN - Email service unavailable"
-                self._handle_failure(None, error_msg, request_id, delivery_tag, ch, message)
+                self._handle_failure(None, error_msg, request_id, delivery_tag, ch, message, record_cb_failure=False)
                 return
             
             # Validate required fields
@@ -100,7 +100,7 @@ class EmailConsumer:
             for field in required_fields:
                 if field not in message:
                     error_msg = f"Missing required field: {field}"
-                    self._handle_failure(None, error_msg, request_id, delivery_tag, ch, message)
+                    self._handle_failure(None, error_msg, request_id, delivery_tag, ch, message, record_cb_failure=False)
                     return
             
             # Create email log entry
@@ -115,7 +115,7 @@ class EmailConsumer:
             user_data = HTTPClient.get_user_data(user_id)
             if not user_data:
                 error_msg = "Failed to get user data"
-                self._handle_failure(email_log, error_msg, request_id, delivery_tag, ch, message)
+                self._handle_failure(email_log, error_msg, request_id, delivery_tag, ch, message, record_cb_failure=True)
                 return
             
             # Check user preferences
@@ -131,7 +131,7 @@ class EmailConsumer:
             recipient_email = user_data.get('email')
             if not recipient_email:
                 error_msg = "User has no email address"
-                self._handle_failure(email_log, error_msg, request_id, delivery_tag, ch, message)
+                self._handle_failure(email_log, error_msg, request_id, delivery_tag, ch, message, record_cb_failure=False)
                 return
             
             # Render template
@@ -142,7 +142,7 @@ class EmailConsumer:
             )
             if not template_data:
                 error_msg = "Failed to render email template"
-                self._handle_failure(email_log, error_msg, request_id, delivery_tag, ch, message)
+                self._handle_failure(email_log, error_msg, request_id, delivery_tag, ch, message, record_cb_failure=True)
                 return
             
             # Send email with retry
@@ -167,7 +167,7 @@ class EmailConsumer:
                 
                 ch.basic_ack(delivery_tag=delivery_tag)
             else:
-                self._handle_failure(email_log, error, request_id, delivery_tag, ch, message)
+                self._handle_failure(email_log, error, request_id, delivery_tag, ch, message, record_cb_failure=False)
             
         except Exception as e:
             logger.error(f"Error processing email message: {e}")
@@ -221,7 +221,7 @@ class EmailConsumer:
                 self.retry_counts.clear()
             return False
     
-    def _handle_failure(self, email_log, error_message, request_id, delivery_tag, ch, message=None):
+    def _handle_failure(self, email_log, error_message, request_id, delivery_tag, ch, message=None, record_cb_failure=False):
         """Handle email sending failure"""
         if email_log:
             email_log.status = 'failed'
@@ -229,7 +229,9 @@ class EmailConsumer:
             email_log.save()
         
         HTTPClient.update_notification_status(request_id, 'failed', error_message)
-        self.circuit_breaker.record_failure()
+        if record_cb_failure:
+            self.circuit_breaker.record_failure()
+        
         logger.error(f"Email failed: {request_id} - {error_message}")
         
         # Move to DLQ if permanent failure

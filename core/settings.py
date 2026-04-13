@@ -40,7 +40,6 @@ ALLOWED_HOSTS.extend([
     'localhost',
     '127.0.0.1',
     '0.0.0.0',
-    'emailmicroservice-production-c5b2.up.railway.app',
 ])
 
 
@@ -96,10 +95,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'core.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -108,9 +103,6 @@ DATABASES = {
         'PASSWORD': os.getenv('EMAIL_DB_PASSWORD'),
         'HOST': os.getenv('EMAIL_DB_HOST'),
         'PORT': os.getenv('EMAIL_DB_PORT'),
-        'OPTIONS': {
-            'sslmode': 'require'
-        }
     }
 }
 
@@ -142,7 +134,7 @@ if 'test' in sys.argv:
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': 'redis://default:LTLZrczgLNq4PQeVZI01H93XFzK4ascl@redis-10065.c246.us-east-1-4.ec2.cloud.redislabs.com:10065/0',
+        'LOCATION': os.getenv('REDIS_URL', 'redis://localhost:6379/0'),
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
             'SOCKET_CONNECT_TIMEOUT': 10,
@@ -154,7 +146,7 @@ CACHES = {
 }
 
 # Cache timeouts
-USER_PREFERENCES_CACHE_TIMEOUT = 300  # 5 minutes
+USER_PREFERENCES_CACHE_TIMEOUT = 900  # 15 minutes
 RATE_LIMIT_CACHE_TIMEOUT = 3600  # 1 hour
 TEMPLATE_CACHE_TIMEOUT = 600  # 10 minutes
 
@@ -162,16 +154,13 @@ TEMPLATE_CACHE_TIMEOUT = 600  # 10 minutes
 EMAIL_RATE_LIMIT = int(os.getenv('EMAIL_RATE_LIMIT', '100'))  # emails per hour per user
 
 # # RabbitMQ Configuration
-# RABBITMQ_URL = os.getenv('RABBITMQ_URL', 'amqp://guest:guest@localhost:5672')
-
-# RabbitMQ Cloud Configuration
-RABBITMQ_URL = 'amqps://pxkefxtc:013yLE9kxuZ-6K0sKdjhUXrPs_Ix7z1C@hawk.rmq.cloudamqp.com/pxkefxtc'
+RABBITMQ_URL = os.getenv('RABBITMQ_URL', 'amqp://guest:guest@localhost:5672/')
 
 # External Services Configuration
 API_GATEWAY_URL = os.getenv('API_GATEWAY_URL', 'http://localhost:8000')
 USER_SERVICE_URL = os.getenv('USER_SERVICE_URL', 'http://localhost:8000')
 TEMPLATE_SERVICE_URL = os.getenv('TEMPLATE_SERVICE_URL', 'http://localhost:8000')
-SERVICE_TOKEN = os.getenv('INTERNAL_API_SECRET', '')
+SERVICE_TOKEN = os.getenv('SERVICE_TOKEN')
 
 # Email Configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
